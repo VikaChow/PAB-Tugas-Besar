@@ -111,4 +111,175 @@ class SubmissionController extends Controller
             abort(403, 'Akses ilegal. Anda tidak ditempatkan di Program Studi ini.');
         }
     }
+
+    public function viewStudents()
+    {
+        $user = auth()->user();
+        
+        $students = User::where('department_id', $user->department_id)
+                        ->where('role', 'mahasiswa')
+                        ->latest()
+                        ->get();
+
+        return view('users.students', compact('students'));
+    }
+
+    public function viewStaff()
+    {
+        $user = auth()->user();
+        
+        $staff = User::where('department_id', $user->department_id)
+                    ->whereIn('role', ['kaprodi', 'tu', 'manager'])
+                    ->latest()
+                    ->get();
+
+        return view('users.staff', compact('staff'));
+    }
+
+    public function createStudent()
+    {
+        return view('users.create_student');
+    }
+
+    public function storeStudent(Request $request)
+    {
+        $request->validate([
+            'nrp' => 'required|string|max:50|unique:users,nrp',
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users,email',
+            'password' => 'required|string|min:8',
+        ]);
+
+        User::create([
+            'nrp' => $request->nrp,
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'role' => 'mahasiswa',
+            'department_id' => auth()->user()->department_id,
+        ]);
+
+        return redirect()->route('users.students')->with('success', 'Data mahasiswa baru berhasil ditambahkan ke jurusan ini.');
+    }
+
+    public function editStudent(User $user)
+    {
+        if (auth()->user()->department_id !== $user->department_id || $user->role !== 'mahasiswa') {
+            abort(403, 'Akses ditolak. Mahasiswa tidak berada di bawah yurisdiksi jurusan Anda.');
+        }
+
+        return view('users.edit_student', compact('user'));
+    }
+
+    public function updateStudent(Request $request, User $user)
+    {
+        if (auth()->user()->department_id !== $user->department_id) { abort(403); }
+
+        $request->validate([
+            'nrp' => 'required|string|max:50|unique:users,nrp,' . $user->id,
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
+            'password' => 'nullable|string|min:8',
+        ]);
+
+        $data = [
+            'nrp' => $request->nrp,
+            'name' => $request->name,
+            'email' => $request->email,
+        ];
+
+        if ($request->filled('password')) {
+            $data['password'] = Hash::make($request->password);
+        }
+
+        $user->update($data);
+
+        return redirect()->route('users.students')->with('success', 'Data mahasiswa berhasil diperbarui.');
+    }
+
+    public function destroyStudent(User $user)
+    {
+        if (auth()->user()->department_id !== $user->department_id) { abort(403); }
+
+        $user->delete();
+
+        return redirect()->route('users.students')->with('success', 'Data mahasiswa berhasil dihapus dari database.');
+    }
+
+    public function createStaff()
+    {
+        return view('users.create_staff');
+    }
+
+    public function storeStaff(Request $request)
+    {
+        $request->validate([
+            'nrp' => 'required|string|max:50|unique:users,nrp',
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users,email',
+            'role' => 'required|string|in:kaprodi,tu',
+            'password' => 'required|string|min:8',
+        ]);
+
+        User::create([
+            'nrp' => $request->nrp,
+            'name' => $request->name,
+            'email' => $request->email,
+            'role' => $request->role,
+            'password' => Hash::make($request->password),
+            'department_id' => auth()->user()->department_id,
+        ]);
+
+        return redirect()->route('users.staff')->with('success', 'Data staf fungsional baru berhasil didaftarkan.');
+    }
+
+    public function editStaff(User $user)
+    {
+        if (auth()->user()->department_id !== $user->department_id || $user->role === 'mahasiswa') {
+            abort(403, 'Akses ditolak. Pengguna berada di luar yurisdiksi prodi Anda.');
+        }
+
+        return view('users.edit_staff', compact('user'));
+    }
+
+    public function updateStaff(Request $request, User $user)
+    {
+        if (auth()->user()->department_id !== $user->department_id || $user->role === 'mahasiswa') { abort(403); }
+
+        $request->validate([
+            'nrp' => 'required|string|max:50|unique:users,nrp,' . $user->id,
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
+            'role' => 'required|string|in:kaprodi,tu',
+            'password' => 'nullable|string|min:8',
+        ]);
+
+        $data = [
+            'nrp' => $request->nrp,
+            'name' => $request->name,
+            'email' => $request->email,
+            'role' => $request->role,
+        ];
+
+        if ($request->filled('password')) {
+            $data['password'] = Hash::make($request->password);
+        }
+
+        $user->update($data);
+
+        return redirect()->route('users.staff')->with('success', 'Data informasi staf berhasil diperbarui.');
+    }
+
+    public function destroyStaff(User $user)
+    {
+        if (auth()->id() === $user->id) {
+            return redirect()->route('users.staff')->with('error', 'Aksi ditolak. Anda tidak bisa menghapus akun Anda sendiri yang sedang aktif.');
+        }
+
+        if (auth()->user()->department_id !== $user->department_id) { abort(403); }
+
+        $user->delete();
+
+        return redirect()->route('users.staff')->with('success', 'Data fungsional staf berhasil dihapus dari database.');
+    }
 }

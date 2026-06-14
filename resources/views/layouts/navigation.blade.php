@@ -20,6 +20,15 @@
                         </x-nav-link>
                     @endif
 
+                    @if(in_array(auth()->user()->role, ['kaprodi', 'tu', 'manager']))
+                        <x-nav-link :href="route('users.students')" :active="request()->routeIs('users.students')">
+                            {{ __('Data Mahasiswa (' . (auth()->user()->department->name ?? 'Umum') . ')') }}
+                        </x-nav-link>
+
+                        <x-nav-link :href="route('users.staff')" :active="request()->routeIs('users.staff')">
+                            {{ __('Data Staf (' . (auth()->user()->department->name ?? 'Umum') . ')') }}
+                        </x-nav-link>
+                    @endif
                 </div>
             </div>
 

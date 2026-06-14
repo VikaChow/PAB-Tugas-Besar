@@ -30,6 +30,27 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/submissions/{submission}/upload', [SubmissionController::class, 'uploadFile'])->name('submissions.upload');
     });
 
+    // KELOMPOK DATA MASTER (KAPRODI, TU, & MANAGER)
+    Route::middleware(['role:kaprodi,tu,manager'])->group(function () {
+        
+        // --- SUB-MODUL: MANAJEMEN DATA MAHASISWA ---
+        Route::get('/users/students', [SubmissionController::class, 'viewStudents'])->name('users.students');
+        Route::get('/users/students/create', [SubmissionController::class, 'createStudent'])->name('users.students.create');
+        Route::post('/users/students/store', [SubmissionController::class, 'storeStudent'])->name('users.storeStudent'); // Tetap users.storeStudent agar sinkron dengan form lama
+        Route::get('/users/students/{user}/edit', [SubmissionController::class, 'editStudent'])->name('users.students.edit');
+        Route::put('/users/students/{user}', [SubmissionController::class, 'updateStudent'])->name('users.students.update');
+        Route::delete('/users/students/{user}', [SubmissionController::class, 'destroyStudent'])->name('users.students.destroy');
+
+        // --- SUB-MODUL: MANAJEMEN DATA STAF (DOSEN & TU) ---
+        Route::get('/users/staff', [SubmissionController::class, 'viewStaff'])->name('users.staff');
+        Route::get('/users/staff/create', [SubmissionController::class, 'createStaff'])->name('users.staff.create');
+        Route::post('/users/staff/store', [SubmissionController::class, 'storeStaff'])->name('users.staff.store');
+        Route::get('/users/staff/{user}/edit', [SubmissionController::class, 'editStaff'])->name('users.staff.edit');
+        Route::put('/users/staff/{user}', [SubmissionController::class, 'updateStaff'])->name('users.staff.update');
+        Route::delete('/users/staff/{user}', [SubmissionController::class, 'destroyStaff'])->name('users.staff.destroy');
+        
+    });
+
     // PROFIL AKUN (BAWAAN BREEZE)
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
